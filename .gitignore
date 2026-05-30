@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+dist/
+build/
+*.whl
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Audiobook output
+audiobook_out/
+*.m4b
+*.m4a
+
+# Reference voices and TTS cache
+reference_voices/
+*.wav
+*.mp3
+
+# Model caches
+.cache/
+
+# Environment
+.env
+.env.local
+
+# Ollama models
+.ollama/
+
+# Input ebooks
+*.epub

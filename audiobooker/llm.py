@@ -19,8 +19,8 @@ def ollama_chat(
     num_ctx: int | None = None,
     timeout_override: int | None = None,
 ) -> str:
-    timeout = timeout_override or int(os.environ.get("OLLAMA_TIMEOUT", "120"))
-    retries = int(os.environ.get("OLLAMA_RETRIES", "1"))
+    base_timeout = timeout_override or int(os.environ.get("OLLAMA_TIMEOUT", "300"))
+    retries = int(os.environ.get("OLLAMA_RETRIES", "2"))
     prompt_chars = len(user_prompt)
 
     payload = {
@@ -40,6 +40,8 @@ def ollama_chat(
     last_error: Exception | None = None
 
     for attempt in range(retries + 1):
+        # Escalate timeout: base, 1.5x, 2x, ...
+        timeout = int(base_timeout * (1 + 0.5 * attempt))
         t0 = time.monotonic()
         print(f"[{_ts()}] ollama request: model={model} prompt={prompt_chars}ch timeout={timeout}s attempt={attempt+1}/{retries+1}")
         try:
@@ -59,8 +61,9 @@ def ollama_chat(
             elapsed = time.monotonic() - t0
             last_error = exc
             if attempt < retries:
-                print(f"[{_ts()}] ollama FAILED after {elapsed:.1f}s, retrying {attempt + 1}/{retries}: {exc}")
-                time.sleep(2 + attempt * 3)
+                backoff = 5 + attempt * 10
+                print(f"[{_ts()}] ollama FAILED after {elapsed:.1f}s, retrying {attempt + 1}/{retries} in {backoff}s: {exc}")
+                time.sleep(backoff)
             else:
                 print(f"[{_ts()}] ollama FAILED after {elapsed:.1f}s (final): {exc}")
 
