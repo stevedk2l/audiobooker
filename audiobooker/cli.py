@@ -140,6 +140,16 @@ def main(argv: list[str] | None = None) -> int:
     all_segments = load_or_build_segments(args, chapters, segments_path)
     print(f"[{_ts()}] Loaded {len(all_segments)} segments")
 
+    if args.llm_speaker_pass or args.llm_cast_pass:
+        print(f"[{_ts()}] Warming up Ollama model ({args.ollama_model})...")
+        t0 = time.monotonic()
+        try:
+            from .llm import ollama_chat
+            ollama_chat(args.ollama_model, "You are a test.", "Reply OK.", args.ollama_host)
+            print(f"[{_ts()}] Model loaded in {time.monotonic() - t0:.1f}s")
+        except Exception as exc:
+            print(f"[{_ts()}] Warmup failed ({exc}), continuing anyway...")
+
     if args.llm_speaker_pass:
         print(f"[{_ts()}] Starting LLM speaker attribution...")
         t0 = time.monotonic()

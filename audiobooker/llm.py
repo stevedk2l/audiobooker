@@ -26,6 +26,7 @@ def ollama_chat(
     payload = {
         "model": model,
         "stream": False,
+        "keep_alive": -1,
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},

@@ -99,7 +99,7 @@ Chapter text:
             raw = ollama_chat(
                 model, system_prompt, prompt, host,
                 num_ctx=16384,
-                timeout_override=180,
+                timeout_override=300,
             )
             result = extract_json_object(raw)
 
@@ -187,7 +187,11 @@ ACTUAL SPEAKER NAMES TO CLASSIFY:
 
     result: dict[str, str | None] = {}
     try:
-        raw = ollama_chat(model, system_prompt, user_prompt, host)
+        raw = ollama_chat(
+            model, system_prompt, user_prompt, host,
+            num_ctx=16384,
+            timeout_override=600,
+        )
         result = extract_json_object(raw)
     except Exception as exc:
         print(f"LLM cast identification failed; skipping: {exc}")
@@ -395,7 +399,11 @@ Return this JSON shape:
 
     raw_result: dict = {}
     try:
-        raw = ollama_chat(model, system_prompt, user_prompt, host)
+        raw = ollama_chat(
+            model, system_prompt, user_prompt, host,
+            num_ctx=16384,
+            timeout_override=600,
+        )
         raw_result = extract_json_object(raw)
     except Exception as exc:
         print(f"Character cast LLM pass failed; using fallback cast. Reason: {exc}")
