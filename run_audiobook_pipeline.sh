@@ -33,7 +33,7 @@ RESET="${RESET:-0}"
 FORCE="${FORCE:-0}"
 SKIP_LLM="${SKIP_LLM:-0}"
 
-PYTHON_BIN="${PYTHON_BIN:-python3.11}"
+UV_PYTHON="${UV_PYTHON:-3.14}"
 
 log() {
   echo
@@ -91,47 +91,21 @@ fi
 
 log "Checking system commands"
 
-command -v "$PYTHON_BIN" >/dev/null 2>&1 || die "$PYTHON_BIN not found. Install Python 3.11."
+command -v uv >/dev/null 2>&1 || die "uv not found. Install with: curl -LsSf https://astral.sh/uv/install.sh | sh"
 command -v ffmpeg >/dev/null 2>&1 || die "ffmpeg not found. Install with: brew install ffmpeg"
 
 if [[ "$SKIP_LLM" != "1" ]]; then
   command -v ollama >/dev/null 2>&1 || die "ollama not found. Install Ollama or run with SKIP_LLM=1."
 fi
 
-log "Preparing Python virtual environment"
+log "Preparing Python environment with uv"
 
-if [[ ! -d ".venv" ]]; then
-  "$PYTHON_BIN" -m venv .venv
-fi
+uv python install "$UV_PYTHON" 2>/dev/null || true
+uv sync --python "$UV_PYTHON"
 
-# shellcheck disable=SC1091
-source .venv/bin/activate
+log "Verifying dependencies"
 
-python -m pip install --upgrade pip wheel "setuptools<82"
-
-python -m pip install \
-  ebooklib \
-  beautifulsoup4 \
-  lxml \
-  soundfile \
-  "numpy<2" \
-  kokoro \
-  TTS
-
-log "Pinning compatible ML/TTS dependency versions"
-
-# These pins avoid:
-# - Coqui XTTS BeamSearchScorer import failure from transformers 5.x
-# - gruut / TTS breakage from numpy 2.x
-# - torch setuptools<82 warning
-python -m pip install --upgrade --force-reinstall \
-  "numpy<2" \
-  "transformers==4.41.2" \
-  "tokenizers==0.19.1" \
-  "huggingface-hub==0.23.5" \
-  "setuptools<82"
-
-python - <<'PY'
+uv run python - <<'PY'
 import numpy
 from transformers import BeamSearchScorer
 print("Dependency check OK")
@@ -308,7 +282,7 @@ fi
 log "Stage 1: build metadata, speaker attribution, cast map, profiles, and provisional voice map"
 
 set +e
-python ebook_audiobook_converter.py \
+uv run python ebook_audiobook_converter.py \
   "${BASE_ARGS[@]}" \
   "${LLM_ARGS[@]}" \
   "${FORCE_ARGS[@]}" \
@@ -320,7 +294,7 @@ if [[ $stage1_status -ne 0 && "$SKIP_LLM" != "1" ]]; then
   echo
   echo "Stage 1 failed with main model. Retrying with faster fallback model: $OLLAMA_FAST_MODEL"
 
-  python ebook_audiobook_converter.py \
+  uv run python ebook_audiobook_converter.py \
     "${BASE_ARGS[@]}" \
     --llm-cast-pass \
     --llm-speaker-pass \
@@ -350,7 +324,7 @@ if [[ "$BACKEND" == "xtts" || "$BACKEND" == "fish" ]]; then
     REF_FORCE_ARG+=(--force)
   fi
 
-  python tools/generate_kokoro_reference_voices.py \
+  uv run python tools/generate_kokoro_reference_voices.py \
     --voice-map "$VOICE_MAP" \
     --out-dir "$OUT_DIR/reference_voices" \
     "${REF_FORCE_ARG[@]}"
@@ -360,14 +334,14 @@ fi
 
 log "Stage 3: rebuild voice map to pick up generated references"
 
-python ebook_audiobook_converter.py \
+uv run python ebook_audiobook_converter.py \
   "${BASE_ARGS[@]}" \
   --parse-only
 
 if [[ "$PREVIEW_VOICES" == "1" ]]; then
   log "Stage 4: generate voice previews"
 
-  python ebook_audiobook_converter.py \
+  uv run python ebook_audiobook_converter.py \
     "${BASE_ARGS[@]}" \
     --preview-voices
 else
@@ -376,7 +350,7 @@ fi
 
 log "Stage 5: render final audiobook"
 
-python ebook_audiobook_converter.py \
+uv run python ebook_audiobook_converter.py \
   "${BASE_ARGS[@]}"
 
 log "Done"

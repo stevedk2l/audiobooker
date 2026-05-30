@@ -19,18 +19,22 @@ Convert EPUB books into multi-voice audiobooks with AI-powered speaker attributi
 
 ### Prerequisites
 
-- Python 3.11+
+- Python 3.14+ (managed automatically by uv)
+- [uv](https://docs.astral.sh/uv/) for dependency management
 - [Ollama](https://ollama.ai) running locally (for speaker attribution and cast inference)
+- [ffmpeg](https://ffmpeg.org/) for audio encoding
 - One or more TTS backends installed
 
 ### Installation
 
 ```bash
-# Create virtual environment
-python3.11 -m venv .venv
-source .venv/bin/activate
+# Install uv (if not already installed)
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# The pipeline script handles dependency installation automatically
+# Install Python and dependencies
+uv sync
+
+# The pipeline script handles everything automatically
 ```
 
 ### Usage
@@ -44,7 +48,7 @@ The simplest way to run the full pipeline:
 Or use the Python CLI directly:
 
 ```bash
-python3 -m audiobooker book.epub \
+uv run python -m audiobooker book.epub \
   --backend xtts \
   --llm-speaker-pass \
   --llm-cast-pass \
